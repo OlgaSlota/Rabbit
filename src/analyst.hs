@@ -17,24 +17,9 @@ import Data.Char
 import Data.List    -- for intercalate
 
 main = do
-    specs <- getArgs
-
-    if length specs /= 1 then do
-        putStrLn "Give 1 specialization !"
-        putStr   "("
-        putStr   (intercalate " / " specializations)
-        putStrLn ")"
-        exitFailure
-    else
-        putStr ""
+    intro
 
     (bodyPart:_) <- getArgs
-    arg0 : _ <- getArgs
-
-    putStrLn "+ --------- +"
-    putStr   "|  ANALYST  | ("
-    putStr   (fmap toUpper arg0)
-    putStrLn ")\n+ --------- +"
 
     -- Connection
     conn <- openConnection "127.0.0.1" "/" "guest" "guest"
@@ -46,7 +31,7 @@ main = do
     -- Declare Exchange
     declareExchange chan newExchange {exchangeName = "hospital-exchange", exchangeType = "direct"}
 
-    putStrLn "Running... Press Enter to close.\n"
+    putStrLn "/press Enter to close.../\n"
 
 
     -- Publish to the Queue
@@ -59,7 +44,6 @@ main = do
     putStrLn "connection closed"
 
   where
-    specializations = ["analysis", "algebra", "logic"]
     msg rk bodyPart = newMsg { msgBody = (BL.pack $ bodyPart),
                                 msgReplyTo = Just rk }
 
@@ -71,3 +55,32 @@ acceptReply :: (Message, Envelope) -> IO ()
 acceptReply (msg, env) = do
     putStrLn $ ">> " ++ (BL.unpack $ msgBody msg)
     ackEnv env
+
+intro = do
+    specs <- getArgs
+
+    if length specs /= 1 then do
+        putStr "Give 1 specialization !\n("
+        putStr   (intercalate " / " specializations)
+        putStrLn ")"
+        exitFailure
+    else
+        putStr ""   -- I do not know how to remove else
+
+    arg0 : _ <- getArgs
+
+    if arg0 `notElem` specializations then do
+        putStr "Please give a specialization from the list:\n("
+        putStr   (intercalate " / " specializations)
+        putStrLn ")"
+        exitFailure
+    else
+        putStr ""
+
+    putStrLn "+ --------- +"
+    putStr   "|  ANALYST  | ("
+    putStr   (fmap toUpper arg0)
+    putStrLn ")\n+ --------- +"
+
+  where
+    specializations = ["analysis", "algebra", "logic"]
