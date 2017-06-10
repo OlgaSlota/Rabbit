@@ -13,8 +13,9 @@ import System.Exit
 import Data.Map as M
 import Network.AMQP
 import Network.AMQP.Types
-import Data.Char
-import Data.List    -- for intercalate
+import Data.Char as C
+import Data.List as L
+import Data.Text as T
 
 main = do
     intro
@@ -25,18 +26,18 @@ main = do
     conn <- openConnection "127.0.0.1" "/" "guest" "guest"
     chan <- openChannel conn
 
-    -- Get declared Queue (created in tech)
-    (replyToQ, _, _) <- declareQueue chan anonQueue
+    -- Declare queue to receive reply from math.hs
+    (replyQueue, _, _) <- declareQueue chan anonQueue
 
     -- Declare Exchange
-    declareExchange chan newExchange {exchangeName = "hospital-exchange", exchangeType = "direct"}
+    declareExchange chan newExchange {exchangeName = "math-exchange", exchangeType = "direct"}
 
     putStrLn "/press Enter to close.../\n"
 
 
     -- Publish to the Queue
-    publishMsg chan "hospital-exchange" "" (msg replyToQ bodyPart)
-    consumeMsgs chan replyToQ Ack acceptReply
+    publishMsg chan "math-exchange" "" (msg replyQueue bodyPart)
+    consumeMsgs chan replyQueue Ack acceptReply
 
 
     getLine -- wait for keypress
@@ -57,21 +58,21 @@ acceptReply (msg, env) = do
     ackEnv env
 
 intro = do
-    specs <- getArgs
-
-    if length specs /= 1 then do
-        putStr "Give 1 specialization !\n("
-        putStr   (intercalate " / " specializations)
-        putStrLn ")"
-        exitFailure
-    else
-        putStr ""   -- I do not know how to remove else
+--     specs <- getArgs
+--
+--     if length specs /= 1 then do
+--         putStr "Give 1 specialization !\n("
+--         putStr   (intercalate " / " specializations)
+--         putStrLn ")"
+--         exitFailure
+--     else
+--         putStr ""   -- I do not know how to remove else
 
     arg0 : _ <- getArgs
 
     if arg0 `notElem` specializations then do
         putStr "Please give a specialization from the list:\n("
-        putStr   (intercalate " / " specializations)
+        putStr   (L.intercalate " / " specializations)
         putStrLn ")"
         exitFailure
     else
@@ -79,7 +80,7 @@ intro = do
 
     putStrLn "+ --------- +"
     putStr   "|  ANALYST  | ("
-    putStr   (fmap toUpper arg0)
+    putStr   (fmap C.toUpper arg0)
     putStrLn ")\n+ --------- +"
 
   where
