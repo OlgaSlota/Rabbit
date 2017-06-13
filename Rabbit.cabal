@@ -23,6 +23,7 @@ library
                      , bytestring
                      , containers
                      , amqp
+                     , hint
 
 
   default-language:    Haskell2010
