@@ -21,12 +21,15 @@ import           System.Environment (getArgs)
 import           Analysis
 import           Algebra
 import           Logic
+import           Data.Maybe
+import           Language.Haskell.Interpreter
 
 mathExchange = "direct_math"
 
 main :: IO ()
 main = do
      intro
+     runInterpreter $ setImports ["Prelude"] >> interpret "BL.putStrLn( map (*2) [1,2,3])" (as :: [Int])
 
      conn       <- openConnection "127.0.0.1" "/" "guest" "guest"
      ch         <- openChannel conn
@@ -51,7 +54,7 @@ deliveryHandler :: (Message, Envelope) -> IO ()
 deliveryHandler (msg, metadata) = do
   BL.putStrLn $ " [x] " <> key <> ":" <> body
   BL.putStr " [x] "
-  print (processMsg (BL.unpack(key)) (S.splitOn " " (BL.unpack(body))))
+  print (processMsg (BL.unpack key) (S.splitOn " " (BL.unpack body)))
   ackEnv metadata
   where
     body = msgBody msg
@@ -65,7 +68,7 @@ intro = do
         putStr   (DL.intercalate " / " specializations)
         putStrLn ")"
         exitFailure
-    else do
+    else
         putStrLn ""
     where
         specializations = ["analysis", "algebra", "logic"]
@@ -75,8 +78,16 @@ processMsg key body =
     case M.lookup key solutions of
             Just v  -> v
             Nothing -> 0
-    where solutions = M.fromList[("analysis", derive arg1 (\x -> x^2) arg2 ), ("algebra", fromIntegral (ack arg1Int arg2Int )), ("logic",  fromIntegral (xor arg1Int arg2Int ))]
-          arg1 = (read (body !!0) :: Float)
-          arg2 = (read (body !!1) :: Float)
-          arg1Int = (read (body !!0) :: Int)
-          arg2Int = (read (body !!1) :: Int)
+            where solutions = M.fromList[("analysis", funEval),
+                                         ("algebra", funEval),
+                                         ("logic", funEval)]
+                  funEval = head [f | (mapKey, f) <- funcMap, mapKey == arg0]
+                  arg0 = read (body !! 0)
+                  arg1 = read (body !! 1) :: Float
+                  arg2 = read (body !! 2) :: Float
+                  arg1Int = read (body !! 1) :: Int
+                  arg2Int = read (body !! 2) :: Int
+                  funcMap = [("ack", fromIntegral (ack arg1Int arg2Int)),
+                            --  ("qsort", qsort [arg1Array]),
+                             ("derive", derive arg1 (\x -> x^2) arg2),
+                             ("xor", fromIntegral (xor arg1Int arg2Int))]
