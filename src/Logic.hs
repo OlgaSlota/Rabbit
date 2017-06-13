@@ -1,4 +1,4 @@
-module Logic (xor, deMorgan) where
+module Logic (xor, and', or', deMorgan) where
 
 xor :: Int -> Int -> Int
 xor 1 x = not' x
@@ -16,5 +16,7 @@ or' :: Int -> Int -> Int
 or' 0 0 = 0
 or' _ _ = 1
 
-deMorgan :: Int -> Int -> Bool
-deMorgan p q = not' (and' p q) == or' (not' p) (not' q)
+deMorgan :: Int -> Int -> Int
+deMorgan p q = case not' (and' p q) == or' (not' p) (not' q) of
+        True -> 1
+        _ -> 0

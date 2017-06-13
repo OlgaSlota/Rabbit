@@ -7,9 +7,9 @@
     --package text
 -}
 {-# LANGUAGE OverloadedStrings #-}
+module RequestCalculation where
 
-import Network.AMQP
-
+import           Network.AMQP
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
@@ -49,8 +49,9 @@ methodFor xs = maybe "ack" BL.pack (atMay xs 1)
 bodyFor :: [String] -> BL.ByteString
 bodyFor xs =
     case nrOfParams of
-        1 -> maybe "4" BL.pack (atMay xs 2)
-        2 -> maybe "4 3" BL.pack ((+++) (atMay xs 2) (Just " ") (atMay xs 3))
+        1 -> maybe "1" BL.pack (atMay xs 2)
+        2 -> maybe "1 0" BL.pack ((+++) (atMay xs 2) (Just " ") (atMay xs 3))
+        3 -> maybe "1 0 2" BL.pack ((+++)((+++) (atMay xs 2) (Just " ") (atMay xs 3)) (Just " ") (atMay xs 4))
         _ -> BL.pack ""
     where
         nrOfParams :: Int
