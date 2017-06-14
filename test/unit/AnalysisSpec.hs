@@ -10,11 +10,11 @@ spec :: Spec
 spec = do
   describe "Analysis.derive" $
     it "returns the derivative for delta, function and value" $
-      round (derive 0.00001 (\x -> 2 *x) 5 ) `shouldBe` 2
+      round (derive (\x -> 2 *x)0.00001  5 ) `shouldBe` 2
 
   describe "Analysis.derive" $
     it "is constant when function linear" $
-      round (derive 0.00001 (\x -> 2 *x) 5 ) == round (derive 0.00001 (\x -> 2 *x) 2 )
+      round (derive (\x -> 2 *x) 0.00001 5 ) == round (derive (\x -> 2 *x) 0.00001 2 )
 
   describe "Analysis.macLaurinEx" $
     it "returns sum of maclaurin e^x" $

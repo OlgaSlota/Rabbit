@@ -7,6 +7,8 @@
 -}
 {-# LANGUAGE OverloadedStrings #-}
 
+module ProcessCalculation (processMsg) where
+
 import           Network.AMQP
 import           System.Exit
 import           Control.Monad (forM_)
@@ -17,6 +19,7 @@ import qualified Data.Text as DT
 import qualified Data.List as DL
 import           Data.List.Split as S
 import qualified Data.Text.Encoding as DT
+import           Text.Printf as P
 import           System.Environment (getArgs)
 import           Analysis
 import           Algebra
@@ -29,7 +32,6 @@ mathExchange = "direct_math"
 main :: IO ()
 main = do
      intro
-     runInterpreter $ setImports ["Prelude"] >> interpret "BL.putStrLn( map (*2) [1,2,3])" (as :: [Int])
 
      conn       <- openConnection "127.0.0.1" "/" "guest" "guest"
      ch         <- openChannel conn
@@ -54,11 +56,16 @@ deliveryHandler :: (Message, Envelope) -> IO ()
 deliveryHandler (msg, metadata) = do
   BL.putStrLn $ " [x] " <> key <> ":" <> body
   BL.putStr " [x] "
-  print (processMsg (BL.unpack key) (S.splitOn " " (BL.unpack body)))
+  let result = processMsg (BL.unpack key) (S.splitOn " " (BL.unpack body))
+  case isInt result of
+    True -> P.printf "%.0f\n" result
+    _ -> print result
   ackEnv metadata
   where
     body = msgBody msg
     key  = BL.fromStrict . DT.encodeUtf8 $ envRoutingKey metadata
+
+isInt x = x == fromInteger (round x)
 
 intro = do
     specs <- getArgs
@@ -75,19 +82,31 @@ intro = do
 
 processMsg :: String -> [String] -> Float
 processMsg key body =
-    case M.lookup key solutions of
-            Just v  -> v
-            Nothing -> 0
-            where solutions = M.fromList[("analysis", funEval),
-                                         ("algebra", funEval),
-                                         ("logic", funEval)]
-                  funEval = head [f | (mapKey, f) <- funcMap, mapKey == arg0]
-                  arg0 = read (body !! 0)
+    case key of
+        "analysis" -> funEval analysisSolution
+        "algebra" -> funEval algebraSolution
+        "logic" -> funEval logicSolution
+        where
+                  funEval solutions =
+                      case M.lookup arg0 solutions of
+                          Just v  -> v
+                          Nothing -> 0
+
+                  analysisSolution = M.fromList[ ("deriveSqrt", deriveSqrt arg1 arg2),
+                                                 ("deriveSqr", deriveSqr arg1 arg2),
+                                                 ("deriveCubic", deriveCubic arg1 arg2),
+                                                 ("deriveTan", deriveTan arg1 arg2),
+                                                 ("macLaurinEx", macLaurinEx arg1Int arg2)]
+                  algebraSolution = M.fromList[ ("ack", fromIntegral (ack arg1Int arg2Int)),
+                                                ("lawOfCosines", lawOfCosines arg1 arg2 arg3)]
+                  logicSolution = M.fromList[ ("xor", fromIntegral (xor arg1Int arg2Int)),
+                                              ("or'", fromIntegral (or' arg1Int arg2Int)),
+                                              ("and'", fromIntegral (and' arg1Int arg2Int)),
+                                              ("deMorgan", fromIntegral (deMorgan arg1Int arg2Int))]
+
+                  arg0 = body !! 0
                   arg1 = read (body !! 1) :: Float
                   arg2 = read (body !! 2) :: Float
+                  arg3 = read (body !! 3) :: Float
                   arg1Int = read (body !! 1) :: Int
                   arg2Int = read (body !! 2) :: Int
-                  funcMap = [("ack", fromIntegral (ack arg1Int arg2Int)),
-                            --  ("qsort", qsort [arg1Array]),
-                             ("derive", derive arg1 (\x -> x^2) arg2),
-                             ("xor", fromIntegral (xor arg1Int arg2Int))]
