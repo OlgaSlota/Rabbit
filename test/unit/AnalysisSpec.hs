@@ -1,8 +1,6 @@
 module AnalysisSpec where
 
 import Test.Hspec
-import Test.QuickCheck
-
 import Analysis
 import Text.Printf
 
